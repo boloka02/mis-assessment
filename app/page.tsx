@@ -1,65 +1,91 @@
-import Image from "next/image";
+// app/page.tsx
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
+  const router = useRouter();
+  const [examId, setExamId] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [msg, setMsg] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!examId.trim()) return setError('Enter an Examination ID');
+
+    setLoading(true);
+    setError('');
+    setMsg('');
+
+    try {
+      const res = await fetch('/api/verify-exam', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ examination_id: examId }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.valid) {
+        localStorage.setItem('exam_examination_id', examId);
+        setMsg('Valid! Starting…');
+        setTimeout(() => router.push(`/applicant/exam?id=${examId}`), 800);
+      } else {
+        setError(data.message || 'Invalid ID');
+      }
+    } catch {
+      setError('Network error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-6 dark:bg-black">
+      <div className="w-full max-w-md space-y-8">
+        {/* Welcome Header */}
+        <div className="text-center">
+          <h1 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-5xl">
+            Welcome to
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <h2 className="mt-2 text-3xl font-semibold text-black dark:text-white sm:text-4xl">
+            ADON Assessment
+          </h2>
+          <p className="mt-4 text-base text-zinc-600 dark:text-zinc-400">
+            Please enter your Examination ID to begin.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {msg && <p className="text-center text-green-600 font-medium">{msg}</p>}
+          {error && <p className="text-center text-red-600 font-medium">{error}</p>}
+
+          <input
+            type="text"
+            value={examId}
+            onChange={e => setExamId(e.target.value)}
+            placeholder="Examination ID"
+            className="w-full rounded-lg border border-zinc-300 bg-white px-5 py-3.5 text-base text-zinc-900 placeholder:text-zinc-500 focus:border-black focus:outline-none focus:ring-2 focus:ring-black/10 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-400 dark:focus:border-white dark:focus:ring-white/10"
+            disabled={loading}
+          />
+
+          <button
+            type="submit"
+            disabled={loading || !examId.trim()}
+            className="w-full rounded-full bg-black py-3.5 text-base font-medium text-white transition-all hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+            {loading ? 'Verifying…' : 'Start Assessment'}
+          </button>
+        </form>
+
+        {/* Footer Note */}
+        <p className="text-center text-xs text-zinc-500 dark:text-zinc-500">
+          Powered by ADON | Secure & Confidential
+        </p>
+      </div>
     </div>
   );
 }
