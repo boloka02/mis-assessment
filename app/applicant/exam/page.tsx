@@ -1,7 +1,7 @@
 // app/applicant/exam/page.tsx
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 type Question = {
@@ -24,7 +24,8 @@ const CATEGORY_LABEL: Record<string, string> = {
 
 const TIME_PER_CATEGORY = 5 * 60; // 5 minutes
 
-export default function ExamPage() {
+/** Inner component that uses useSearchParams */
+function ExamContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const examId = searchParams.get('id');
@@ -37,10 +38,11 @@ export default function ExamPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  // Ref for auto‑scroll
   const topRef = useRef<HTMLDivElement>(null);
 
+  // -----------------------------------------------------------------
   // Load questions
+  // -----------------------------------------------------------------
   useEffect(() => {
     if (!examId) {
       router.replace('/');
@@ -64,7 +66,9 @@ export default function ExamPage() {
     fetchQuestions();
   }, [examId, router]);
 
+  // -----------------------------------------------------------------
   // Timer
+  // -----------------------------------------------------------------
   useEffect(() => {
     if (loading || submitting) return;
 
@@ -96,6 +100,9 @@ export default function ExamPage() {
     topRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [currentCategoryIdx]);
 
+  // -----------------------------------------------------------------
+  // Group questions
+  // -----------------------------------------------------------------
   const grouped = questions.reduce((acc, q) => {
     if (!acc[q.category]) acc[q.category] = [];
     acc[q.category].push(q);
@@ -112,6 +119,9 @@ export default function ExamPage() {
     }
   };
 
+  // -----------------------------------------------------------------
+  // Submit
+  // -----------------------------------------------------------------
   const submitExam = async () => {
     setSubmitting(true);
     setError('');
@@ -274,5 +284,14 @@ export default function ExamPage() {
         )}
       </div>
     </div>
+  );
+}
+
+/** Page component – wraps the content in Suspense */
+export default function ExamPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-lg">Loading exam…</div>}>
+      <ExamContent />
+    </Suspense>
   );
 }

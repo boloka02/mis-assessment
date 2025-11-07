@@ -1,12 +1,13 @@
 // app/applicant/result/page.tsx
 'use client';
 
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
 
-export default function ResultPage() {
-  const sp = useSearchParams();
-  const examId = sp.get('id');
+/** Inner component that uses useSearchParams */
+function ResultContent() {
+  const searchParams = useSearchParams();
+  const examId = searchParams.get('id');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -17,7 +18,7 @@ export default function ResultPage() {
       return;
     }
 
-    // Still fetch result to update DB status if needed
+    // Still fetch to mark result as viewed (optional)
     fetch(`/api/result?id=${examId}`)
       .then(r => r.json())
       .then(() => {
@@ -71,5 +72,14 @@ export default function ResultPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+/** Page component – wraps in Suspense */
+export default function ResultPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-lg">Loading result…</div>}>
+      <ResultContent />
+    </Suspense>
   );
 }
